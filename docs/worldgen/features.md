@@ -57,7 +57,7 @@ public static final DeferredRegister<Feature<?>> FEATURES =
     DeferredRegister.create(Registries.FEATURE, MOD_ID);
 
 public static final DeferredHolder<Feature<?>, ExampleFeature> EXAMPLE_FEATURE =
-    FEATURES.register("example", ExampleFeature::new);
+    FEATURES.register("example_feature", ExampleFeature::new);
 ```
 
 ## Configuring a Feature
@@ -73,13 +73,13 @@ A `ConfiguredFeature` needs to be [registered dynamically][dynamicregistration] 
 public static final ResourceKey<ConfiguredFeature<?, ?>> EXAMPLE_CONFIGURED_FEATURE =
     ResourceKey.create(
         Registries.CONFIGURED_FEATURE, // The registry this key is for
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example") // The registry name
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_configured_feature") // The registry name
     );
 // An example using a vanilla feature
 public static final ResourceKey<ConfiguredFeature<?, ?>> EXAMPLE_ORE_CONFIGURED_FEATURE =
     ResourceKey.create(
         Registries.CONFIGURED_FEATURE,
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore")
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore_configured_feature")
     );
 
 // For some RegistrySetBuilder BUILDER
@@ -115,9 +115,9 @@ BUILDER.add(Registries.CONFIGURED_FEATURE, bootstrap -> {
 ```
 
 ```json5
-// In data/examplemod/worldgen/configured_feature/example.json
+// In data/examplemod/worldgen/configured_feature/example_configured_feature.json
 {
-    "type": "examplemod:example",
+    "type": "examplemod:example_feature",
     "config": {
         "height": 3,
         "state": {
@@ -126,7 +126,7 @@ BUILDER.add(Registries.CONFIGURED_FEATURE, bootstrap -> {
     }
 }
 
-// In data/examplemod/worldgen/configured_feature/example_ore.json
+// In data/examplemod/worldgen/configured_feature/example_ore_configured_feature.json
 {
     "type": "minecraft:ore",
     "config": {
@@ -193,7 +193,7 @@ public static final DeferredHolder<
         PlacementModifierType<?>,
         PlacementModifierType<ExamplePlacementModifier>
     > EXAMPLE_PLACEMENT_MODIFIER_TYPE =
-        FEATPLACEMENT_MODIFIER_TYPESURES.register("example", () -> () -> CODEC);
+        PLACEMENT_MODIFIER_TYPES.register("example_placement_modifier", () -> () -> CODEC);
 ```
 
 See the [Minecraft Wiki][placedwiki] for a list of placement modifiers.
@@ -243,12 +243,12 @@ A `PlacedFeature` needs to be [registered dynamically][dynamicregistration] eith
 public static final ResourceKey<PlacedFeature> EXAMPLE_PLACED_FEATURE =
     ResourceKey.create(
         Registries.PLACED_FEATURE,
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example")
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_placed_feature")
     );
 public static final ResourceKey<PlacedFeature> EXAMPLE_ORE_PLACED_FEATURE =
     ResourceKey.create(
         Registries.PLACED_FEATURE,
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore")
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore_placed_feature")
     );
 
 // For some RegistrySetBuilder BUILDER
@@ -316,12 +316,12 @@ BUILDER.add(Registries.PLACED_FEATURE, bootstrap -> {
 ```
 
 ```json5
-// In data/examplemod/worldgen/placed_feature/example.json
+// In data/examplemod/worldgen/placed_feature/example_placed_feature.json
 {
-    "feature": "examplemod:example",
+    "feature": "examplemod:example_configured_feature",
     "placement": [
         {
-            "type": "examplemod:example",
+            "type": "examplemod:example_placement_modifier",
             "chance": 5
         },
         {
@@ -339,9 +339,9 @@ BUILDER.add(Registries.PLACED_FEATURE, bootstrap -> {
     ]
 }
 
-// In data/examplemod/worldgen/placed_feature/example_ore.json
+// In data/examplemod/worldgen/placed_feature/example_ore_placed_feature.json
 {
-    "feature": "examplemod:example_ore",
+    "feature": "examplemod:example_ore_configured_feature",
     "placement": [
         {
             "type": "minecraft:count",
@@ -401,7 +401,7 @@ If you are the creator of the biome, then you can add the feature using the [`Bi
 public static final ResourceKey<Biome> EXAMPLE_BIOME =
     ResourceKey.create(
         Registries.BIOME, // The registry this key is for
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example") // The registry name
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_biome") // The registry name
     );
 
 // For some RegistrySetBuilder BUILDER
@@ -434,7 +434,7 @@ BUILDER.add(Registries.BIOME, bootstrap -> {
 ```
 
 ```json
-// In data/examplemod/worldgen/biome/example.json
+// In data/examplemod/worldgen/biome/example_biome.json
 {
   "carvers": {},
   "downfall": 0.0,
@@ -451,7 +451,7 @@ BUILDER.add(Registries.BIOME, bootstrap -> {
     [],
     // LOCAL_MODIFICATIONS
     [
-        "examplemod:example"
+        "examplemod:example_placed_feature"
     ],
     // UNDERGROUND_STRUCTURES
     [],
@@ -461,7 +461,7 @@ BUILDER.add(Registries.BIOME, bootstrap -> {
     [],
     // UNDERGROUND_ORES
     [
-        "examplemod:example_ore"
+        "examplemod:example_ore_placed_feature"
     ],
     // UNDERGROUND_DECORATION
     [],
@@ -491,12 +491,12 @@ If you are **not** the creator of the biome, then you can add the feature using 
 public static final ResourceKey<Biome> EXAMPLE_BIOME_MODIFIER =
     ResourceKey.create(
         NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example") // The registry name
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_biome_modifier") // The registry name
     );
 public static final ResourceKey<Biome> EXAMPLE_ORE_BIOME_MODIFIER =
     ResourceKey.create(
         NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
-        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore") // The registry name
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore_biome_modifier") // The registry name
     );
 
 // For some RegistrySetBuilder BUILDER
@@ -533,19 +533,19 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 ```
 
 ```json5
-// In data/examplemod/neoforge/biome_modifier/example.json
+// In data/examplemod/neoforge/biome_modifier/example_biome_modifier.json
 {
   "type": "neoforge:add_features",
   "biomes": "minecraft:plains",
-  "features": "examplemod:example",
+  "features": "examplemod:example_placed_feature",
   "step": "local_modifications"
 }
 
-// In data/examplemod/neoforge/biome_modifier/example_ore.json
+// In data/examplemod/neoforge/biome_modifier/example_ore_biome_modifier.json
 {
   "type": "neoforge:add_features",
   "biomes": "#c:is_overworld",
-  "features": "examplemod:example_ore",
+  "features": "examplemod:example_ore_placed_feature",
   "step": "underground_ores"
 }
 ```
