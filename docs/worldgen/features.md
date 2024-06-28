@@ -436,64 +436,64 @@ BUILDER.add(Registries.BIOME, bootstrap -> {
 ```json
 // In data/examplemod/worldgen/biome/example_biome.json
 {
-  "carvers": {},
-  "downfall": 0.0,
-  "effects": {
-    "fog_color": 0,
-    "sky_color": 0,
-    "water_color": 0,
-    "water_fog_color": 0
-  },
-  "features": [
-    // RAW_GENERATION
-    [],
-    // LAKES
-    [],
-    // LOCAL_MODIFICATIONS
-    [
-        "examplemod:example_placed_feature"
+    "carvers": {},
+    "downfall": 0.0,
+    "effects": {
+        "fog_color": 0,
+        "sky_color": 0,
+        "water_color": 0,
+        "water_fog_color": 0
+    },
+    "features": [
+        // RAW_GENERATION
+        [],
+        // LAKES
+        [],
+        // LOCAL_MODIFICATIONS
+        [
+            "examplemod:example_placed_feature"
+        ],
+        // UNDERGROUND_STRUCTURES
+        [],
+        // SURFACE_STRUCTURES
+        [],
+        // STRONGHOLDS
+        [],
+        // UNDERGROUND_ORES
+        [
+            "examplemod:example_ore_placed_feature"
+        ],
+        // UNDERGROUND_DECORATION
+        [],
+        // FLUID_SPRINGS
+        [],
+        // VEGETAL_DECORATION
+        [],
+        // TOP_LAYER_MODIFICATION
+        []
     ],
-    // UNDERGROUND_STRUCTURES
-    [],
-    // SURFACE_STRUCTURES
-    [],
-    // STRONGHOLDS
-    [],
-    // UNDERGROUND_ORES
-    [
-        "examplemod:example_ore_placed_feature"
-    ],
-    // UNDERGROUND_DECORATION
-    [],
-    // FLUID_SPRINGS
-    [],
-    // VEGETAL_DECORATION
-    [],
-    // TOP_LAYER_MODIFICATION
-    []
-  ],
-  "has_precipitation": true,
-  "spawn_costs": {},
-  "spawners": {},
-  "temperature": 2.0
+    "has_precipitation": true,
+    "spawn_costs": {},
+    "spawners": {},
+    "temperature": 2.0
 }
 ```
 
 ### Biome Modifiers
 
-If you are **not** the creator of the biome, then you can add the feature using [biome modifiers][biomemodifiers]. The simplest way to do so is to use `AddFeaturesBiomeModifier`. However, if more complex logic is needed, a custom biome modifier can be created.
+If you are **not** the creator of the biome, then you can add the feature using [biome modifiers][biomemodifiers]. The simplest way to do so is to use [`AddFeaturesBiomeModifier`][addfeatures]. However, if more complex logic is needed, a custom biome modifier can be created.
 
 `AddFeaturesBiomeModifier` can be created either by data generation or directly writing the JSON. The JSONs are located at `data/<mod_id>/neoforge/biome_modifier/<path>.json`.
 
 ```java
 // Define keys for datapack registry objects
 
-public static final ResourceKey<Biome> EXAMPLE_BIOME_MODIFIER =
+public static final ResourceKey<BiomeModifier> EXAMPLE_BIOME_MODIFIER =
     ResourceKey.create(
         NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
         ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_biome_modifier") // The registry name
     );
-public static final ResourceKey<Biome> EXAMPLE_ORE_BIOME_MODIFIER =
+public static final ResourceKey<BiomeModifier> EXAMPLE_ORE_BIOME_MODIFIER =
     ResourceKey.create(
         NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
         ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_ore_biome_modifier") // The registry name
@@ -512,9 +512,9 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 
     bootstrap.register(EXAMPLE_BIOME_MODIFIER,
         new AddFeaturesBiomeModifier(
-            // A single biome to generate within
+            // The biome(s) to generate within
             HolderSet.direct(biomes.getOrThrow(Biomes.PLAINS)),
-            // A single feature to generate within the biomes
+            // The feature(s) to generate within the biomes
             HolderSet.direct(placedFeatures.getOrThrow(EXAMPLE_PLACED_FEATURE)),
             // The generation step
             GenerationStep.Decoration.LOCAL_MODIFICATIONS
@@ -523,7 +523,7 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 
     bootstrap.register(EXAMPLE_ORE_BIOME_MODIFIER,
         new AddFeaturesBiomeModifier(
-            // The biomes this feature can generate within
+            // The biome(s) this feature can generate within
             biomes.getOrThrow(Tags.Biomes.IS_OVERWORLD),
             HolderSet.direct(placedFeatures.getOrThrow(EXAMPLE_ORE_PLACED_FEATURE)),
             GenerationStep.Decoration.UNDERGROUND_ORES
@@ -535,18 +535,18 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 ```json5
 // In data/examplemod/neoforge/biome_modifier/example_biome_modifier.json
 {
-  "type": "neoforge:add_features",
-  "biomes": "minecraft:plains",
-  "features": "examplemod:example_placed_feature",
-  "step": "local_modifications"
+    "type": "neoforge:add_features",
+    "biomes": "minecraft:plains",
+    "features": "examplemod:example_placed_feature",
+    "step": "local_modifications"
 }
 
 // In data/examplemod/neoforge/biome_modifier/example_ore_biome_modifier.json
 {
-  "type": "neoforge:add_features",
-  "biomes": "#c:is_overworld",
-  "features": "examplemod:example_ore_placed_feature",
-  "step": "underground_ores"
+    "type": "neoforge:add_features",
+    "biomes": "#c:is_overworld",
+    "features": "examplemod:example_ore_placed_feature",
+    "step": "underground_ores"
 }
 ```
 
@@ -562,3 +562,4 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 <!--TODO: Add correct link-->
 [biomebuilder]: #
 [biomemodifiers]: ./biomes/biomemodifiers.md
+[addfeatures]: ./biomes/biomemodifiers.md#addfeaturesbiomemodifier
