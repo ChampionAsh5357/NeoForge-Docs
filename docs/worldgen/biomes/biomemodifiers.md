@@ -12,11 +12,113 @@ Biome Modifiers are a data-driven system for modifying a biome. A modifier may m
 
 ## Creating a Biome Modifier
 
-TODO
+Biome modifiers are made up of three parts:
+
+- The [datapack registered][datareg] `BiomeModifier` used to modify the biome builder.
+- The [statically registered][staticreg] `MapCodec` that encodes and decodes the modifiers.
+- The JSON that constructs the `BiomeModifier`, using the registered id of the `MapCodec` as the indexable type.
+
+### The `BiomeModifier` Implementation
+
+A `BiomeModifier` contains two methods: `#modify` and `#codec`. `modify` takes in the current `Biome` being constructor, the modifier `BiomeModifier.Phase`, and the builder of the biome to modify. Every `BiomeModifier` is called once per `Phase` to organize when certain modifications to the biome should occur:
+
+| Phase               | Description                                                              |
+|:-------------------:|:-------------------------------------------------------------------------|
+| `BEFORE_EVERYTHING` | A catch-all for everything that needs to run before the standard phases. |
+| `ADD`               | Adding features, mob spawns, etc.                                        |
+| `REMOVE`            | Removing features, mob spawns, etc.                                      |
+| `MODIFY`            | Modifying single values (e.g., climate, colors).                         |
+| `AFTER_EVERYTHING`  | A catch-all for everything that needs to run after the standard phases.  |
+
+`codec` takes in the `MapCodec` that encodes and decodes the modifiers. This `MapCodec` is [statically registered][staticreg], with its id used as the type of the biome modifier.
+
+```java
+public record ExampleBiomeModifier(HolderSet<Biome> biomes, int value) implements BiomeModifier {
+    
+    @Override
+    public void modify(Holder<Biome> biome, Phase phase, ModifiableBiomeInfo.BiomeInfo.Builder builder) {
+        if (phase == /* Pick the phase that best matches what your want to modify */) {
+            // Modify the 'builder', checking any information about the biome itself
+        }
+    }
+
+    @Override
+    public MapCodec<? extends BiomeModifier> codec() {
+        return EXAMPLE_BIOME_MODIFIER.value();
+    }
+}
+
+// In some registration class
+private static final DeferredRegister<MapCodec<? extends BiomeModifier>> REGISTRAR =
+    DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, MOD_ID);
+
+public static final Holder<MapCodec<? extends BiomeModifier>> EXAMPLE_BIOME_MODIFIER =
+    REGISTRAR.register("example_biome_modifier", () -> RecordCodecBuilder.mapCodec(instance ->
+        instance.group(
+            Biome.LIST_CODEC.fieldOf("biomes").forGetter(ExampleBiomeModifier::biomes),
+            Codec.INT.fieldOf("value").forGetter(ExampleBiomeModifier::value)
+        ).apply(instance, ExampleBiomeModifier::new)
+    ));
+```
+
+### Generating the Biome Modifier
+
+A `BiomeModifier` can be created in two ways: writing the JSON manually or via [data generation][datagen] by passing a `RegistrySetBuilder` to `DatapackBuiltinEntriesProvider`. Biome Modifiers are located within `data/<modid>/neoforge/biome_modifier/<path>.json` All biome modifiers contain a `type` key that references the id of the `MapCodec` used for the biome modifier. All other settings provided by the biome modifier are added as additional keys on the root object.
+
+```java
+// Define keys for datapack registry objects
+
+public static final ResourceKey<BiomeModifier> EXAMPLE_MODIFIER =
+    ResourceKey.create(
+        NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_modifier") // The registry name
+    );
+
+// For some RegistrySetBuilder BUILDER
+//   being passed to DatapackBuiltinEntriesProvider
+//   in a listener for GatherDataEvent
+BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
+    // Lookup any necessary registries
+    // Static registries only need to be looked up if you need to grab the tag data
+    HolderGetter<Biome> biomes = bootstrap.lookup(Registries.BIOME);
+
+    // Register the biome modifiers
+
+    bootstrap.register(EXAMPLE_MODIFIER,
+        new ExampleBiomeModifier(
+            biomes.getOrThrow(Tags.Biomes.IS_OVERWORLD),
+            20
+        )
+    );
+})
+```
+
+```json5
+// In data/examplemod/neoforge/biome_modifier/example_modifier.json
+{
+    // The registy key of the MapCodec for the modifier
+    "type": "examplemod:example_biome_modifier",
+    // All additional settings are applied to the root object
+    "biomes": "#c:is_overworld",
+    "value": 20
+}
+```
 
 ## Existing Biome Modifiers
 
-NeoForge provides some basic biome modifiers for common usecases. Both the datagen and JSON implementation will be shown.
+NeoForge provides some basic biome modifiers for common usecases. Both the datagen and JSON implementation will be shown. All biome modifiers can be found in `BiomeModifiers`.
+
+### Disabling Biome Modifiers
+
+Datapacks can disable mod-added biome modifiers by overriding the associated JSON and setting the type to `neoforge:none`.
+
+```json
+// For some existing data/examplemod/neoforge/biome_modifier/add_features_example.json
+// In another datapack
+{
+    "type": "neoforge:none"
+}
+```
 
 ### `AddFeaturesBiomeModifier`
 
@@ -213,7 +315,7 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 
 ### `RemoveSpawnsBiomeModifier`
 
-`RemoveSpawnsBiomeModifier` removes mob spawning information from biomes. The modifier takes in the `Biome` id or tag of the biomes the spawning information are removed from and the `EntityTypes` of the mobs to remove.
+`RemoveSpawnsBiomeModifier` removes mob spawning information from biomes. The modifier takes in the `Biome` id or tag of the biomes the spawning information are removed from and the `EntityType` id or tag of the mobs to remove.
 
 ```java
 // Define keys for datapack registry objects
@@ -381,13 +483,118 @@ BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
 
 ### `AddSpawnCostsBiomeModifier`
 
-TODO
+`AddSpawnCostsBiomeModifier` adds spawn costs for mobs to biomes. The modifier takes in the `Biome` id or tag of the biomes the spawn costs are added to, the `EntityType` id or tag of the mobs to add spawn costs for, and the `MobSpawnSettings.MobSpawnCost` of the mob. The `MobSpawnCost` contains the energy budget, which indicates the maximum number of entities that can spawn in a location based upon the charge provided for each entity spawned. 
+
+```java
+// Define keys for datapack registry objects
+
+public static final ResourceKey<BiomeModifier> ADD_SPAWN_COSTS_EXAMPLE =
+    ResourceKey.create(
+        NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "add_spawn_costs_example") // The registry name
+    );
+
+// For some RegistrySetBuilder BUILDER
+//   being passed to DatapackBuiltinEntriesProvider
+//   in a listener for GatherDataEvent
+BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
+    // Lookup any necessary registries
+    // Static registries only need to be looked up if you need to grab the tag data
+    HolderGetter<Biome> biomes = bootstrap.lookup(Registries.BIOME);
+    HolderGetter<EntityType<?>> entities = bootstrap.lookup(Registries.ENTITY_TYPE);
+
+    // Register the biome modifiers
+
+    bootstrap.register(ADD_SPAWN_COSTS_EXAMPLE,
+        new AddSpawnCostsBiomeModifier(
+            // The biome(s) to add the spawn costs to
+            biomes.getOrThrow(Tags.Biomes.IS_OVERWORLD),
+            // The entities to add the spawn costs for
+            entities.getOrThrow(EntityTypeTags.SKELETONS),
+            new MobSpawnSettings.MobSpawnCost(
+                1.0, // The energy budget
+                0.1  // The amount of charge each entity takes up from the budget
+            )
+        )
+    );
+})
+```
+
+```json5
+// In data/examplemod/neoforge/biome_modifier/add_spawn_costs_example.json
+{
+    "type": "neoforge:add_spawn_costs",
+    // Can either be an id "minecraft:plains"
+    //   List of ids ["minecraft:plains", "minecraft:badlands", ...]
+    //   Or a tag "#c:is_overworld"
+    "biomes": "#c:is_overworld",
+    // Can either be an id "minecraft:ghast"
+    //   List of ids ["minecraft:ghast", "minecraft:skeleton", ...]
+    //   Or a tag "#minecraft:skeletons"
+    "entity_types": "#minecraft:skeletons",
+    "spawn_cost": {
+        // The energy budget
+        "energy_budget": 1.0,
+        // The amount of charge each entity takes up from the budget
+        "charge": 0.1
+    }
+}
+```
 
 ### `RemoveSpawnCostsBiomeModifier`
 
-TODO
+`RemoveSpawnsBiomeModifier` removes spawn costs for mobs from biomes. The modifier takes in the `Biome` id or tag of the biomes the spawn costs are removed from and the `EntityType` id or tag of the mobs to remove the spawn cost for.
+
+```java
+// Define keys for datapack registry objects
+
+public static final ResourceKey<BiomeModifier> REMOVE_SPAWN_COSTS_EXAMPLE =
+    ResourceKey.create(
+        NeoForgeRegistries.Keys.BIOME_MODIFIERS, // The registry this key is for
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "remove_spawn_costs_example") // The registry name
+    );
+
+// For some RegistrySetBuilder BUILDER
+//   being passed to DatapackBuiltinEntriesProvider
+//   in a listener for GatherDataEvent
+BUILDER.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, bootstrap -> {
+    // Lookup any necessary registries
+    // Static registries only need to be looked up if you need to grab the tag data
+    HolderGetter<Biome> biomes = bootstrap.lookup(Registries.BIOME);
+    HolderGetter<EntityType<?>> entities = bootstrap.lookup(Registries.ENTITY_TYPE);
+
+    // Register the biome modifiers
+
+    bootstrap.register(REMOVE_SPAWN_COSTS_EXAMPLE,
+        new RemoveSpawnCostsBiomeModifier(
+            // The biome(s) to remove the spawnc costs from
+            biomes.getOrThrow(Tags.Biomes.IS_OVERWORLD),
+            // The entities to remove spawn costs for
+            entities.getOrThrow(EntityTypeTags.SKELETONS)
+        )
+    );
+})
+```
+
+```json5
+// In data/examplemod/neoforge/biome_modifier/remove_spawn_costs_example.json
+{
+    "type": "neoforge:remove_spawn_costs",
+    // Can either be an id "minecraft:plains"
+    //   List of ids ["minecraft:plains", "minecraft:badlands", ...]
+    //   Or a tag "#c:is_overworld"
+    "biomes": "#c:is_overworld",
+    // Can either be an id "minecraft:ghast"
+    //   List of ids ["minecraft:ghast", "minecraft:skeleton", ...]
+    //   Or a tag "#minecraft:skeletons"
+    "entity_types": "#minecraft:skeletons"
+}
+```
 
 
 [features]: ../features.md
+[datareg]: ../../concepts/registries.md#datapack-registries
+[staticreg]: ../../concepts/registries.md#methods-for-registering
+[datagen]: ../../resources/index.md#data-generation
 [placedfeature]: ../features.md#placing-a-feature
 [decoration]: ../features.md#adding-a-feature-to-a-biome
